@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-#[derive(Clone,PartialEq,Eq,Hash,Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 struct Symbol {
     name: String,
 }
@@ -9,7 +9,7 @@ struct Symbol {
 impl fmt::Display for Symbol {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
-     }
+    }
 }
 
 struct Inputs {
@@ -33,7 +33,7 @@ struct Const {
 impl fmt::Display for Const {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.val)
-     }
+    }
 }
 
 impl Eval for Const {
@@ -44,9 +44,7 @@ impl Eval for Const {
 impl Derive for Const {
     type DerivT = Const;
     fn deriv(&self, _vs: &Symbol) -> Self::DerivT {
-        Const {
-            val: 0.0
-        }
+        Const { val: 0.0 }
     }
 }
 
@@ -64,7 +62,7 @@ impl Derive for Symbol {
     type DerivT = Const;
     fn deriv(&self, vs: &Symbol) -> Self::DerivT {
         Const {
-            val: if vs == self { 1.0 } else { 0.0 }
+            val: if vs == self { 1.0 } else { 0.0 },
         }
     }
 }
@@ -75,25 +73,37 @@ struct DAdd<L, R> {
     rhs: R,
 }
 
-impl<L, R> fmt::Display for DAdd<L, R> where L: fmt::Display, R: fmt::Display{
+impl<L, R> fmt::Display for DAdd<L, R>
+where
+    L: fmt::Display,
+    R: fmt::Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({} + {})", self.lhs, self.rhs)
-     }
+    }
 }
 
-impl<L, R> Eval for DAdd<L, R> where L: Eval, R: Eval {
+impl<L, R> Eval for DAdd<L, R>
+where
+    L: Eval,
+    R: Eval,
+{
     fn eval(&self, inputs: &Inputs) -> f64 {
         self.lhs.eval(inputs) + self.rhs.eval(inputs)
     }
 }
 
-impl<L, R> Derive for DAdd<L, R> where L: Derive, R: Derive {
+impl<L, R> Derive for DAdd<L, R>
+where
+    L: Derive,
+    R: Derive,
+{
     type DerivT = DAdd<L::DerivT, R::DerivT>;
 
     fn deriv(&self, vs: &Symbol) -> Self::DerivT {
         DAdd {
             lhs: self.lhs.deriv(vs),
-            rhs: self.rhs.deriv(vs)
+            rhs: self.rhs.deriv(vs),
         }
     }
 }
@@ -101,21 +111,33 @@ impl<L, R> Derive for DAdd<L, R> where L: Derive, R: Derive {
 #[derive(Debug, Clone)]
 struct DMul<L, R> {
     lhs: L,
-    rhs: R
+    rhs: R,
 }
 
-impl<L, R> fmt::Display for DMul<L, R> where L: fmt::Display, R: fmt::Display{
+impl<L, R> fmt::Display for DMul<L, R>
+where
+    L: fmt::Display,
+    R: fmt::Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({} * {})", self.lhs, self.rhs)
-     }
+    }
 }
 
-impl<L, R> Eval for DMul<L, R> where L: Eval, R: Eval {
+impl<L, R> Eval for DMul<L, R>
+where
+    L: Eval,
+    R: Eval,
+{
     fn eval(&self, inputs: &Inputs) -> f64 {
         self.lhs.eval(inputs) * self.rhs.eval(inputs)
     }
 }
-impl<L, R> Derive for DMul<L, R> where L: Derive, R: Derive {
+impl<L, R> Derive for DMul<L, R>
+where
+    L: Derive,
+    R: Derive,
+{
     type DerivT = DAdd<DMul<L, R::DerivT>, DMul<L::DerivT, R>>;
 
     fn deriv(&self, vs: &Symbol) -> Self::DerivT {
@@ -124,27 +146,28 @@ impl<L, R> Derive for DMul<L, R> where L: Derive, R: Derive {
         DAdd {
             lhs: DMul {
                 lhs: self.lhs.clone(),
-                rhs: d_r
+                rhs: d_r,
             },
             rhs: DMul {
                 lhs: d_l,
-                rhs: self.rhs.clone()
-            }
+                rhs: self.rhs.clone(),
+            },
         }
     }
 }
 
-
 fn main() {
-    let x = Symbol { name: "x".to_string() };
+    let x = Symbol {
+        name: "x".to_string(),
+    };
 
     let xp1 = DAdd {
         lhs: x.clone(),
-        rhs: Const { val: 1.0 }
+        rhs: Const { val: 1.0 },
     };
     let func = DMul {
         lhs: xp1.clone(),
-        rhs: xp1
+        rhs: xp1,
     };
 
     let ddx = func.deriv(&x);
@@ -152,7 +175,6 @@ fn main() {
     let inputs = Inputs {
         symbol_map: HashMap::from([(x, 2.0)]),
     };
-
 
     println!("f(x): {}", func);
     println!("f(2): {}", func.eval(&inputs));
